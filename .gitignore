@@ -1,0 +1,81 @@
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Build outputs
+build/
+dist/
+out/
+.next/
+.vite/
+coverage/
+*.tsbuildinfo
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.pyre/
+.venv/
+venv/
+env/
+ENV/
+predictator_env/
+.python-version
+
+# ML / data artifacts
+*.pkl
+*.joblib
+*.h5
+*.onnx
+models/
+checkpoints/
+artifacts/
+saved_models/
+mlruns/
+logs/
+*.log
+
+# Local data and DBs
+*.sqlite3
+*.db
+*.db-journal
+data/
+raw/
+processed/
+tmp/
+temp/
+.cache/
+postgres-data/
+redis-data/
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# OS / editor files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# NPM / package manager caches
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Docker local overrides
+docker-compose.override.yml
+
+# Misc generated files
+*.bak
+*.orig
