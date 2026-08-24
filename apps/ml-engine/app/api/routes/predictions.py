@@ -27,7 +27,7 @@ async def create_predictions(
         raise HTTPException(status_code=400, detail="Model not trained. Call POST /train first")
 
     # Load history
-    history = db.load_sales_history(request.product_id, days_back=90)
+    history = db.load_sales_history(request.product_id, days_back=180)
     if len(history) < 30:
         raise HTTPException(
             status_code=400,
@@ -50,7 +50,9 @@ async def create_predictions(
     alerts = []
     
     for i, (pred, conf) in enumerate(zip(predictions, conf_intervals)):
-        final, alert = predictator.enforce_floor_limit(pred, request.floor_limit)
+        final = pred
+        alert = None
+        
         final_predictions.append(final)
         if alert:
             alerts.append({"day": i+1, "message": alert})
@@ -108,7 +110,7 @@ async def bulk_predictions(
     results = {}
     for product_id in product_ids:
         try:
-            history = db.load_sales_history(product_id, days_back=90)
+            history = db.load_sales_history(product_id, days_back=180)
             if len(history) >= 30:
                 preds, _, _ = predictator.predict(days_ahead, history)
                 final_preds = [max(p, floor_limit) if floor_limit > 0 else p for p in preds]

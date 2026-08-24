@@ -32,7 +32,7 @@ class PredictionService:
         """Get predictions for a product with dictator enforcement"""
         
         # Load historical data
-        history_df = self.db.load_sales_history(product_id, days_back=90)
+        history_df = self.db.load_sales_history(product_id, days_back=180)
         
         if len(history_df) < 30:
             return {
@@ -117,7 +117,7 @@ class PredictionService:
         current_month = datetime.now().month
         return current_month in [3, 4]  # March-April approximation
     
-    def get_prediction_history(self, product_id: str, days_back: int = 30) -> Dict:
+    def get_prediction_history(self, product_id: str, days_back: int = 180) -> Dict:
         """Get historical prediction accuracy"""
         
         # Load past predictions from database
