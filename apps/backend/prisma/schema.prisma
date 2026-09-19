@@ -1,0 +1,321 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// 🔐 USER & AUTH
+// ============================================
+
+model User {
+  id            String         @id @default(cuid())
+  email         String         @unique
+  password      String
+  firstName     String
+  lastName      String
+  roles         String[]       @default(["user"])
+  
+  // Relationships
+  predictions   Prediction[]
+  sessions      Session[]
+  alerts        Alert[]
+  
+  // Timestamps
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  
+  @@map("users")
+}
+
+model Session {
+  id            String         @id @default(cuid())
+  userId        String
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token         String         @unique
+  expiresAt     DateTime
+  createdAt     DateTime       @default(now())
+  
+  @@map("sessions")
+}
+
+// ============================================
+// 📊 PREDICTIONS
+// ============================================
+
+model Prediction {
+  id            String         @id @default(cuid())
+  productId     String
+  category      String?        @default("Electronics")
+  date          DateTime
+  sales         Float
+  confidenceLower Float?
+  confidenceUpper Float?
+  alert         String?
+  
+  // Dictator info
+  floorLimit    Int?           @default(0)
+  dictatorApplied Boolean      @default(false)
+  alertTriggered Boolean       @default(false)
+  
+  // User who requested this prediction
+  userId        String?
+  user          User?          @relation(fields: [userId], references: [id])
+  
+  // Timestamps
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  
+  // Indexes for fast queries
+  @@index([productId])
+  @@index([date])
+  @@index([userId])
+  @@map("predictions")
+}
+
+// ============================================
+// 📦 PRODUCTS (Metadata)
+// ============================================
+
+model Product {
+  id            String         @id @default(cuid())
+  productId     String         @unique
+  name          String
+  category      String
+  subcategory   String?
+  brand         String?
+  price         Float?
+  costPrice     Float?
+  
+  // Stock management
+  minStock      Int            @default(0)
+  maxStock      Int            @default(1000)
+  reorderPoint  Int            @default(50)
+  isActive      Boolean        @default(true)
+  
+  // Sales patterns
+  avgDailySales Float?
+  avgWeeklySales Float?
+  avgMonthlySales Float?
+  
+  // Baku-specific
+  seasonalityFactor Float     @default(1.0)
+  holidaySensitivity Float    @default(1.0)
+  
+  // Timestamps
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  
+  // Relationships
+  salesHistory  SalesHistory[]
+  
+  @@map("products")
+}
+
+// ============================================
+// 📈 SALES HISTORY
+// ============================================
+
+model SalesHistory {
+  id            String         @id @default(cuid())
+  productId     String
+  product       Product        @relation(fields: [productId], references: [productId])
+  date          DateTime
+  sales         Float
+  price         Float?
+  category      String?
+  
+  // Holiday & Season Context
+  holidayName   String?
+  seasonName    String?
+  eventType     String?        @default("Normal")
+  
+  // Weather (future)
+  temperature   Float?
+  weatherCondition String?
+  humidity      Float?
+  windSpeed     Float?
+  
+  // Promotion
+  promotion     Boolean        @default(false)
+  discountPercent Float?
+  promotionType String?
+  
+  // Stock
+  stockLevel    Int?
+  
+  // Timestamps
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  
+  // Indexes
+  @@index([productId])
+  @@index([date])
+  @@index([category])
+  @@map("sales_history")
+}
+
+// ============================================
+// 🏦 HOLIDAY BANK
+// ============================================
+
+model HolidayBank {
+  id            String         @id @default(cuid())
+  holidayName   String
+  date          DateTime
+  preImpactDays Int            @default(3)
+  postImpactDays Int           @default(2)
+  impactStrength Int           @default(5)
+  affectedCategories String?   // Comma-separated: "Electronics,Food"
+  description   String?
+  region        String         @default("Baku")
+  isRecurring   Boolean        @default(true)
+  
+  // Timestamps
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  
+  @@index([holidayName])
+  @@index([date])
+  @@map("holiday_bank")
+}
+
+// ============================================
+// 🌤️ SEASON BANK
+// ============================================
+
+model SeasonBank {
+  id            String         @id @default(cuid())
+  seasonName    String
+  startDate     DateTime
+  endDate       DateTime
+  region        String         @default("Baku")
+  impactCategory String?       // Weather, Commercial, Cultural
+  impactStrength Int           @default(5)
+  preImpactDays Int            @default(3)
+  postImpactDays Int           @default(3)
+  affectedCategories String?
+  description   String?
+  
+  // Timestamps
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  
+  @@index([seasonName])
+  @@index([startDate])
+  @@index([endDate])
+  @@map("season_bank")
+}
+
+// ============================================
+// ⚠️ ALERTS
+// ============================================
+
+model Alert {
+  id            String         @id @default(cuid())
+  productId     String
+  category      String?
+  level         String         // info, warning, critical
+  title         String
+  message       String
+  
+  // Context
+  holidayName   String?
+  seasonName    String?
+  eventType     String?
+  
+  // Metadata
+  data          Json?          // Additional JSON data
+  read          Boolean        @default(false)
+  resolved      Boolean        @default(false)
+  resolvedAt    DateTime?
+  
+  userId        String?
+  user          User?          @relation(fields: [userId], references: [id])
+  
+  // Timestamps
+  createdAt     DateTime       @default(now())
+  
+  @@index([productId])
+  @@index([level])
+  @@index([createdAt])
+  @@map("alerts")
+}
+
+// ============================================
+// 🧠 TRAINING LOGS
+// ============================================
+
+model TrainingLog {
+  id            String         @id @default(cuid())
+  trainingDate  DateTime       @default(now())
+  samplesUsed   Int
+  modelType     String         @default("xgboost")
+  
+  // Model parameters
+  nEstimators   Int?
+  maxDepth      Int?
+  learningRate  Float?
+  featureCount  Int?
+  
+  // Metrics
+  r2Score       Float?
+  mae           Float?
+  rmse          Float?
+  mape          Float?
+  
+  // Data info
+  productIdsTrained String?     // Comma-separated
+  categoriesTrained String?     // Comma-separated
+  dateRangeStart DateTime?
+  dateRangeEnd   DateTime?
+  
+  // Training metadata
+  trainingDurationMs Float?
+  success        Boolean        @default(true)
+  errorMessage   String?
+  featureImportanceJson Json?
+  
+  @@index([trainingDate])
+  @@map("training_logs")
+}
+
+// ============================================
+// 📊 FEATURE STORE
+// ============================================
+
+model FeatureStore {
+  id            String         @id @default(cuid())
+  productId     String
+  date          DateTime
+  category      String?
+  
+  // Feature metadata
+  featureVersion String       @default("v1")
+  featureCount  Int?
+  featuresJson  Json          // All features as JSON
+  
+  // Cached derived features
+  lag1          Float?
+  lag7          Float?
+  lag28         Float?
+  rollingMean7  Float?
+  rollingMean30 Float?
+  trend         Float?
+  seasonal      Float?
+  holidayIntensity Float?
+  seasonIntensity Float?
+  
+  // Timestamps
+  createdAt     DateTime       @default(now())
+  
+  @@index([productId, date])
+  @@index([featureVersion])
+  @@map("feature_store")
+}
