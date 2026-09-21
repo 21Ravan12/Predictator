@@ -11,6 +11,9 @@ from .api.routes.predictions import router as predictions_router
 from .api.routes.products import router as products_router
 from .api.routes.training import router as training_router
 
+# 🆕 Import gRPC server
+from .grpc.server import start_grpc_server_in_thread
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -18,18 +21,43 @@ logger = logging.getLogger(__name__)
 predictator = PredictatorEngine()
 db = DatabaseManager()
 
+# 🆕 Global gRPC server reference
+grpc_server = None
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Startup and shutdown events"""
+    global grpc_server
+    
+    # 🚀 STARTUP
     logger.info("🚀 Starting Predictator Engine v2.0...")
+    
+    # Load model
     if predictator.load_model():
         logger.info("✅ Loaded existing model")
     else:
         logger.info("⚠️ No existing model found")
+    
+    # 🆕 Start gRPC server
+    try:
+        logger.info("📡 Starting gRPC server on port 50051...")
+        grpc_server = start_grpc_server_in_thread(port=50051)
+        logger.info("✅ gRPC server started on port 50051")
+    except Exception as e:
+        logger.error(f"❌ Failed to start gRPC server: {e}")
+    
     yield
+    
+    # 🛑 SHUTDOWN
     if predictator.is_trained:
         predictator.save_model()
         logger.info("💾 Model saved")
+    
+    # 🆕 Stop gRPC server
+    if grpc_server:
+        logger.info("🛑 Stopping gRPC server...")
+        grpc_server.stop(grace=5)
+        logger.info("✅ gRPC server stopped")
 
 # Create FastAPI app
 app = FastAPI(
@@ -61,7 +89,8 @@ async def root():
     return {
         "message": "🧠 Predictator Engine v2.0",
         "status": "ready",
-        "docs": "/docs"
+        "docs": "/docs",
+        "grpc": "port 50051"  # 🆕 Show gRPC info
     }
 
 @app.get("/health")
@@ -69,6 +98,6 @@ async def health_check():
     return {
         "status": "healthy" if predictator.is_trained else "degraded",
         "model_loaded": predictator.is_trained,
-        "last_training": predictator.last_training_date.isoformat() if predictator.last_training_date else None
+        "last_training": predictator.last_training_date.isoformat() if predictator.last_training_date else None,
+        "grpc_running": grpc_server is not None  # 🆕 Check gRPC status
     }
-

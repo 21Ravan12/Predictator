@@ -8,6 +8,7 @@ import {
   IsNotEmpty,
   MinLength,
 } from 'class-validator';
+import { Expose, Transform } from 'class-transformer';
 
 export class PredictDto {
   @ApiProperty({
@@ -15,6 +16,8 @@ export class PredictDto {
     description: 'Product ID to predict sales for',
     minLength: 2,
   })
+  @Expose({ name: 'product_id' })
+  @Transform(({ value, obj }) => value ?? obj?.product_id ?? obj?.productId)
   @IsString()
   @IsNotEmpty()
   @MinLength(2)
@@ -27,6 +30,8 @@ export class PredictDto {
     maximum: 30,
     default: 7,
   })
+  @Expose({ name: 'days_ahead' })
+  @Transform(({ value, obj }) => value ?? obj?.days_ahead ?? obj?.daysAhead)
   @IsInt()
   @Min(1)
   @Max(30)
@@ -38,6 +43,8 @@ export class PredictDto {
     required: false,
     default: 0,
   })
+  @Expose({ name: 'floor_limit' })
+  @Transform(({ value, obj }) => value ?? obj?.floor_limit ?? obj?.floorLimit)
   @IsInt()
   @Min(0)
   @IsOptional()

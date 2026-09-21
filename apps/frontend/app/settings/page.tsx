@@ -12,7 +12,7 @@ type TrainingStatus = {
 };
 
 export default function SettingsPage() {
-  const [apiUrl, setApiUrl] = useState('http://localhost:8000');
+  const [apiUrl, setApiUrl] = useState('http://localhost:4000');
   const [floorLimit, setFloorLimit] = useState(0);
   const [trainingStatus, setTrainingStatus] = useState<TrainingStatus | null>(null);
   const [loading, setLoading] = useState(false);

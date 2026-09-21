@@ -4,7 +4,8 @@ export default registerAs('grpc', () => ({
   // gRPC server configuration (for ML Engine)
   url: process.env.ML_ENGINE_GRPC_URL || 'localhost:50051',
   package: 'predictor',
-  protoPath: process.env.GRPC_PROTO_PATH || 'proto/predictor.proto',
+  protoPath:
+    process.env.GRPC_PROTO_PATH || 'src/grpc/proto/predictor.proto',
 
   // gRPC client options
   options: {

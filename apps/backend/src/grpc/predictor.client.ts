@@ -104,7 +104,7 @@ export class PredictorClient implements OnModuleInit {
       transport: Transport.GRPC,
       options: {
         package: 'predictor',
-        protoPath: join(__dirname, '../../../proto/predictor.proto'),
+        protoPath: join(process.cwd(), 'src/grpc/proto/predictor.proto'),
         url: grpcUrl,
         loader: {
           keepCase: true,

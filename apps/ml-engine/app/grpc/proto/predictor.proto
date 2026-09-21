@@ -1,0 +1,75 @@
+syntax = "proto3";
+
+package predictor;
+
+service PredictorService {
+  rpc GetPrediction (PredictionRequest) returns (PredictionResponse);
+  rpc GetPredictionsStream (PredictionRequest) returns (stream PredictionResponse);
+  rpc TrainModel (TrainRequest) returns (TrainResponse);
+  rpc GetTrainingStatus (Empty) returns (TrainingStatusResponse);
+}
+
+// ============== REQUEST MESSAGES ==============
+
+message PredictionRequest {
+  string product_id = 1;
+  int32 days_ahead = 2;
+  int32 floor_limit = 3;
+}
+
+message TrainRequest {
+  string csv_path = 1;
+  bool force_retrain = 2;
+}
+
+message Empty {}
+
+// ============== RESPONSE MESSAGES ==============
+
+message PredictionResponse {
+  bool success = 1;
+  string product_id = 2;
+  repeated Prediction predictions = 3;
+  Summary summary = 4;
+  repeated DictatorAction dictator_actions = 5;
+}
+
+message Prediction {
+  string date = 1;
+  float predicted_sales = 2;
+  float confidence_lower = 3;
+  float confidence_upper = 4;
+  string alert = 5;
+}
+
+message Summary {
+  float total_predicted = 1;
+  float average_daily = 2;
+  float peak_day = 3;
+  int32 floor_violations = 4;
+}
+
+message DictatorAction {
+  int32 day = 1;
+  string message = 2;
+}
+
+message TrainResponse {
+  bool success = 1;
+  string message = 2;
+  int32 samples_used = 3;
+  Metrics metrics = 4;
+}
+
+message Metrics {
+  float r2 = 1;
+  float mae = 2;
+  float rmse = 3;
+  int32 n_features = 4;
+}
+
+message TrainingStatusResponse {
+  bool is_trained = 1;
+  string last_training_date = 2;
+  Metrics metrics = 3;
+}
