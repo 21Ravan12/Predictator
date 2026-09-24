@@ -1,4 +1,4 @@
-# 🚀 Predictator-v1
+# 🚀 Predictator-v2
 
 > *"Because spreadsheets are SO last decade"* 🤖
 
