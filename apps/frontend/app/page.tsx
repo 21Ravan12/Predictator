@@ -1,133 +1,166 @@
+// app/page.tsx
 'use client';
 
-import { useState } from 'react';
-import { generatePredictions } from '@/app/services/api';
-import Dashboard from '@/app/components/Dashboard';
-import PredictionTable from '@/app/components/PredictionTable';
-import AlertPanel from '@/app/components/AlertPanel';
+import Link from 'next/link';
+import { useEffect, useState } from 'react';
+import { getProducts, type Product } from '@/app/services/api';
 
-interface Prediction {
-  date: string;
-  predicted_sales: number;
-  confidence_lower: number;
-  confidence_upper: number;
-  alert: string | null;
-}
+export default function DashboardPage() {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
 
-interface Alert {
-  day: number;
-  message: string;
-}
-
-interface PredictionResponse {
-  product_id: string;
-  predictions: Prediction[];
-  summary: {
-    total_predicted: number;
-    average_daily: number;
-    peak_day: number;
-    floor_violations: number;
-  };
-  dictator_actions?: Alert[];
-}
-
-export default function HomePage() {
-  const [productId, setProductId] = useState('P001');
-  const [daysAhead, setDaysAhead] = useState(7);
-  const [loading, setLoading] = useState(false);
-  const [data, setData] = useState<PredictionResponse | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  const handlePredict = async () => {
-    setLoading(true);
-    setError(null);
-
+  const loadProducts = async () => {
     try {
-      const result = await generatePredictions(productId, daysAhead);
-
-      setData({
-        product_id: result.product_id ?? productId,
-        predictions: result.predictions ?? [],
-        summary: result.summary ?? {
-          total_predicted: 0,
-          average_daily: 0,
-          peak_day: 0,
-          floor_violations: 0,
-        },
-        dictator_actions: result.dictator_actions ?? [],
-      });
+      const data = await getProducts();
+      setProducts(data ?? []);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to get predictions');
+      console.error('Failed to load products:', err);
     } finally {
       setLoading(false);
     }
   };
 
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      void loadProducts();
+    }, 0);
+
+    return () => window.clearTimeout(timeoutId);
+  }, []);
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">📊 Sales Forecast</h1>
-        <div className="flex flex-wrap items-center gap-3">
-          <select
-            value={productId}
-            onChange={(e) => setProductId(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white"
-          >
-            <option value="P001">📱 P001 - Electronics</option>
-            <option value="P002">🍔 P002 - Food</option>
-            <option value="P003">👕 P003 - Clothing</option>
-          </select>
-          <input
-            type="number"
-            value={daysAhead}
-            onChange={(e) => setDaysAhead(Math.min(30, Math.max(1, Number(e.target.value))))}
-            className="w-20 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-            min={1}
-            max={30}
-          />
-          <button
-            onClick={handlePredict}
-            disabled={loading}
-            className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition flex items-center gap-2"
-          >
-            {loading ? (
-              <>
-                <span className="animate-spin">⏳</span> Loading...
-              </>
-            ) : (
-              '🚀 Predict'
-            )}
-          </button>
+      {/* Welcome */}
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">
+          👋 Welcome to Predictator
+        </h1>
+        <p className="text-gray-600">
+          AI-powered sales forecasting system
+        </p>
+      </div>
+
+      {/* Quick Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="bg-white p-6 rounded-lg shadow-sm border-l-4 border-indigo-500">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-500">Total Products</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {loading ? '...' : products.length}
+              </p>
+            </div>
+            <span className="text-3xl">📦</span>
+          </div>
+        </div>
+
+        <div className="bg-white p-6 rounded-lg shadow-sm border-l-4 border-green-500">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-500">Model Status</p>
+              <p className="text-2xl font-bold text-green-600">Active</p>
+            </div>
+            <span className="text-3xl">🧠</span>
+          </div>
+        </div>
+
+        <div className="bg-white p-6 rounded-lg shadow-sm border-l-4 border-purple-500">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-500">R² Score</p>
+              <p className="text-2xl font-bold text-purple-600">0.961</p>
+            </div>
+            <span className="text-3xl">🎯</span>
+          </div>
         </div>
       </div>
 
-      {/* Error */}
-      {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
-          ❌ {error}
-        </div>
-      )}
+      {/* Quick Actions */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <Link
+          href="/predictions"
+          className="bg-linear-to-br from-indigo-500 to-indigo-600 text-white p-6 rounded-lg shadow-md hover:shadow-lg transition group"
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-xl font-bold mb-2">🔮 Make Predictions</h3>
+              <p className="text-indigo-100 text-sm">
+                Generate sales forecasts for any product
+              </p>
+            </div>
+            <span className="text-4xl group-hover:translate-x-2 transition">
+              →
+            </span>
+          </div>
+        </Link>
 
-      {/* Results */}
-      {data && (
-        <div className="space-y-6 animate-fadeIn">
-          <Dashboard data={data} />
-          <PredictionTable predictions={data.predictions} />
-          {data.dictator_actions && data.dictator_actions.length > 0 && (
-            <AlertPanel alerts={data.dictator_actions} />
-          )}
-        </div>
-      )}
+        <Link
+          href="/products"
+          className="bg-linear-to-br from-green-500 to-green-600 text-white p-6 rounded-lg shadow-md hover:shadow-lg transition group"
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-xl font-bold mb-2">📦 Manage Products</h3>
+              <p className="text-green-100 text-sm">
+                View and manage your product catalog
+              </p>
+            </div>
+            <span className="text-4xl group-hover:translate-x-2 transition">
+              →
+            </span>
+          </div>
+        </Link>
+      </div>
 
-      {/* Empty State */}
-      {!data && !loading && !error && (
-        <div className="bg-white rounded-lg shadow-sm p-12 text-center border-2 border-dashed border-gray-200">
-          <div className="text-6xl mb-4">📈</div>
-          <h3 className="text-xl font-semibold text-gray-700 mb-2">No Predictions Yet</h3>
-          <p className="text-gray-500">Select a product and click Predict to see the forecast</p>
+      {/* Products List */}
+      <div className="bg-white rounded-lg shadow-sm p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold text-gray-800">
+            📦 Your Products
+          </h2>
+          <Link
+            href="/products"
+            className="text-sm text-indigo-600 hover:text-indigo-700"
+          >
+            View all →
+          </Link>
         </div>
-      )}
+
+        {loading ? (
+          <div className="text-center py-8 text-gray-500">Loading...</div>
+        ) : products.length === 0 ? (
+          <div className="text-center py-8 text-gray-500">
+            No products found
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {products.slice(0, 4).map((product) => {
+              const categoryName =
+                product.category?.name ?? product.categoryName ?? 'Unknown';
+              const categoryIcon =
+                product.category?.icon ??
+                (categoryName === 'Electronics'
+                  ? '📱'
+                  : categoryName === 'Food'
+                    ? '🍔'
+                    : categoryName === 'Clothing'
+                      ? '👕'
+                      : '📦');
+
+              return (
+                <div
+                  key={product.productId}
+                  className="border border-gray-200 rounded-lg p-4 hover:border-indigo-300 transition"
+                >
+                  <div className="text-2xl mb-2">{categoryIcon}</div>
+                  <p className="font-semibold text-gray-800">{product.name}</p>
+                  <p className="text-xs text-gray-500">{categoryName}</p>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

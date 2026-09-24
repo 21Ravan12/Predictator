@@ -1,6 +1,7 @@
 import { Injectable, Inject, Logger } from '@nestjs/common';
 import type { Cache } from 'cache-manager';
 import { CACHE_MANAGER } from '../cache/cache.constants';
+import { DatabaseService } from '../database/database.service';
 import {
   PredictorClient,
   PredictionResponse,
@@ -15,6 +16,7 @@ export class PredictionsService {
   constructor(
     private predictorClient: PredictorClient,
     @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
+    private readonly databaseService: DatabaseService,
   ) {}
 
   async generatePredictions(
@@ -85,12 +87,53 @@ export class PredictionsService {
     }
   }
 
+  // ============================================
+  // 📦 PRODUCTS
+  // ============================================
+
   getProducts() {
-    // This would call the ML Engine to get available products
-    // For now, return a default list
-    return {
-      products: ['P001', 'P002', 'P003'],
-      categories: ['Electronics', 'Food', 'Clothing'],
-    };
+    return this.databaseService.product.findMany({
+      where: { isActive: true },
+      include: {
+        category: {
+          select: {
+            categoryId: true,
+            name: true,
+            icon: true,
+          },
+        },
+      },
+      orderBy: { productId: 'asc' },
+    });
+  }
+
+  async getProduct(productId: string) {
+    const product = await this.databaseService.product.findUnique({
+      where: { productId },
+      include: { category: true },
+    });
+
+    if (!product) {
+      throw new Error(`Product ${productId} not found`);
+    }
+
+    return product;
+  }
+
+  // ============================================
+  // 📁 CATEGORIES
+  // ============================================
+
+  getCategories() {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+    return this.databaseService.category.findMany({
+      where: { isActive: true },
+      include: {
+        _count: {
+          select: { products: true },
+        },
+      },
+      orderBy: { categoryId: 'asc' },
+    });
   }
 }

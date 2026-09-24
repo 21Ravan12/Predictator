@@ -103,11 +103,32 @@ export async function getTrainingStatus() {
   return json.data;
 }
 
-export async function getProducts() {
+export async function getProducts(): Promise<Product[]> {
   const response = await fetch(`${API_BASE}/api/predictions/products`);
   if (!response.ok) {
     throw new Error('Failed to get products');
   }
   const json = await response.json();
   return json.data;
+}
+
+// app/services/api.ts
+
+export interface ProductCategory {
+  categoryId: string;
+  name: string;
+  icon?: string | null;
+}
+
+export interface Product {
+  productId: string;
+  name: string;
+  categoryId?: string | null;
+  categoryName?: string | null;
+  category?: ProductCategory | null;
+  brand?: string | null;
+  unitPrice?: number | null;
+  costPrice?: number | null;
+  isActive?: boolean | null;
+  description?: string | null;
 }

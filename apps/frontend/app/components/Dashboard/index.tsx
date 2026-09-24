@@ -12,17 +12,37 @@ interface DashboardProps {
 
 export default function Dashboard({ data }: DashboardProps) {
   const metrics = [
-    { label: 'Total Predicted', value: data.summary.total_predicted, color: 'indigo' },
-    { label: 'Average Daily', value: data.summary.average_daily, color: 'green' },
-    { label: 'Peak Day', value: data.summary.peak_day, color: 'yellow' },
-    { label: 'Floor Violations', value: data.summary.floor_violations, color: 'red' },
+    {
+      label: 'Total Predicted',
+      value: Math.round(data.summary.total_predicted).toLocaleString(),
+      color: 'indigo',
+      icon: '📊',
+    },
+    {
+      label: 'Average Daily',
+      value: Math.round(data.summary.average_daily).toLocaleString(),
+      color: 'green',
+      icon: '📈',
+    },
+    {
+      label: 'Peak Day',
+      value: Math.round(data.summary.peak_day).toLocaleString(),
+      color: 'yellow',
+      icon: '🎯',
+    },
+    {
+      label: 'Floor Violations',
+      value: data.summary.floor_violations,
+      color: 'red',
+      icon: '⚠️',
+    },
   ];
 
   const colors = {
-    indigo: 'border-indigo-500',
-    green: 'border-green-500',
-    yellow: 'border-yellow-500',
-    red: 'border-red-500',
+    indigo: 'border-indigo-500 text-indigo-600',
+    green: 'border-green-500 text-green-600',
+    yellow: 'border-yellow-500 text-yellow-600',
+    red: 'border-red-500 text-red-600',
   };
 
   return (
@@ -32,8 +52,13 @@ export default function Dashboard({ data }: DashboardProps) {
           key={metric.label}
           className={`bg-white p-4 rounded-lg shadow-sm border-l-4 ${colors[metric.color as keyof typeof colors]}`}
         >
-          <p className="text-sm text-gray-500">{metric.label}</p>
-          <p className="text-2xl font-bold text-gray-900">{metric.value}</p>
+          <div className="flex items-center gap-2">
+            <span>{metric.icon}</span>
+            <p className="text-sm text-gray-500">{metric.label}</p>
+          </div>
+          <p className="text-2xl font-bold text-gray-900 mt-1">
+            {metric.value}
+          </p>
         </div>
       ))}
     </div>

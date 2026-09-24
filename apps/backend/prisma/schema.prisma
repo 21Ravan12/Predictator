@@ -83,38 +83,60 @@ model Prediction {
 // 📦 PRODUCTS (Metadata)
 // ============================================
 
+// Add this NEW model
+model Category {
+  id                 String    @id @default(cuid())
+  categoryId         String    @unique
+  name               String
+  description        String?
+  icon               String?
+  seasonalityFactor  Float     @default(1.0)
+  holidaySensitivity Float     @default(1.0)
+  isActive           Boolean   @default(true)
+  
+  products           Product[]
+  
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  
+  @@map("categories")
+}
+
+// Update existing Product model
 model Product {
-  id            String         @id @default(cuid())
-  productId     String         @unique
-  name          String
-  category      String
-  subcategory   String?
-  brand         String?
-  price         Float?
-  costPrice     Float?
+  id                 String    @id @default(cuid())
+  productId          String    @unique
+  name               String
+  categoryId         String?
+  category           Category? @relation(fields: [categoryId], references: [categoryId])
+  categoryName       String?   // Keep this for compatibility with SalesHistory
+  brand              String?
+  unitPrice          Float?
+  costPrice          Float?
   
   // Stock management
-  minStock      Int            @default(0)
-  maxStock      Int            @default(1000)
-  reorderPoint  Int            @default(50)
-  isActive      Boolean        @default(true)
-  
-  // Sales patterns
-  avgDailySales Float?
-  avgWeeklySales Float?
-  avgMonthlySales Float?
+  minStock           Int       @default(0)
+  maxStock           Int       @default(1000)
+  reorderPoint       Int       @default(50)
+  isActive           Boolean   @default(true)
   
   // Baku-specific
-  seasonalityFactor Float     @default(1.0)
-  holidaySensitivity Float    @default(1.0)
+  seasonalityFactor  Float     @default(1.0)
+  holidaySensitivity Float     @default(1.0)
+  
+  // Sales patterns (calculated later)
+  avgDailySales      Float?
+  avgWeeklySales     Float?
+  avgMonthlySales    Float?
+
+  salesHistory       SalesHistory[]
+  description        String?
   
   // Timestamps
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
   
-  // Relationships
-  salesHistory  SalesHistory[]
-  
+  @@index([categoryName])
   @@map("products")
 }
 
