@@ -41,34 +41,16 @@ What that means for the numbers you'll see:
 
 ---
 
-## 🏗️ Architecture: Tri-Core
+## 🚧 Current Status: WORK IN PROGRESS
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│  🌐 Frontend (Next.js)              → http://localhost:3000 │
-│     • Dashboard, Predictions, Products, Settings            │
-│     • Tailwind CSS + Recharts                               │
-└──────────────────────────┬──────────────────────────────────┘
-                           │ HTTP REST
-                           ▼
-┌─────────────────────────────────────────────────────────────┐
-│  ⚙️  Backend (NestJS)               → http://localhost:4000 │
-│     • API Gateway, JWT Auth, Cache, Logging                 │
-│     • Prisma + PostgreSQL                                   │
-└──────────────────────────┬──────────────────────────────────┘
-                           │ gRPC (binary, fast ⚡)
-                           ▼
-┌─────────────────────────────────────────────────────────────┐
-│  🧠 ML Engine (FastAPI)             → http://localhost:8000 │
-│     • gRPC server on port 50051                             │
-│     • XGBoost model + Feature Engineering                   │
-│     • SQLite for training data                              │
-└─────────────────────────────────────────────────────────────┘
-```
+> **I'm actively building this!** 🏗️
 
-Why three services? To practice real-world separation of concerns — the ML 
-engine stays focused on modeling, the backend handles orchestration and auth, 
-and the frontend stays pure UI.
+What I'm currently working on:
+- 🔜 Adding more features (weather, promotions, price effects)
+- 🔜 Category-level predictions
+- 🔜 Store-level aggregation
+- 🔜 Better models (XGBoost, Prophet)
+- 🔜 Real weather API integration
 
 ---
 
