@@ -7,37 +7,42 @@ business rules through a **Dictator Engine** (don't worry — it's a benevolent
 dictator 😅).
 
 Built as a learning project to explore the full lifecycle of a production-grade 
-ML system: from data ingestion and feature engineering, through model training 
+ML system: from data generation and feature engineering, through model training 
 and serving, all the way to a modern web dashboard.
 
 ---
 
-## ⚠️ Honest Status: Small on Purpose
+## ⚠️ Honest Status: Synthetic Data, Real Pipeline
 
-This project is intentionally scoped small. I'm developing it on a modest 
-laptop (literally a potato with a screen 🥔), so the dataset is tiny 
-(3 products, ~180 days) and the infrastructure is deliberately simple.
+This project runs on **synthetic data**, and that's on purpose. My laptop is 
+basically a potato with a screen 🥔, so instead of waiting for real retail 
+data, I generated a realistic 2-year dataset for an imaginary Baku store 
+("BakuMart") — 40 products across 4 categories, with weather, holidays, 
+Ramadan effects, and promotions baked in.
 
-**The goal isn't to fake scale — it's to get the architecture right first**, 
-then grow into real data and real workloads.
+**The goal isn't to fake scale — it's to get the architecture right, then 
+swap in real data later.**
 
 What that means for the numbers you'll see:
 - ✅ The end-to-end flow works (Frontend → Backend → gRPC → ML Engine → DB)
-- ✅ Predictions are generated and displayed in a real dashboard
-- ⚠️ The high R² (0.96) is on a small dataset — a signal, not a proof
-- 🔜 Larger data, better validation, and cloud deployment are next
+- ✅ Predictions are generated, served, and displayed in a real dashboard
+- ✅ 40 products, 4 categories, 29,200 rows of sales history
+- ⚠️ High R² (0.997) is on synthetic data — a signal, not a proof
+- 🔜 Real data integration, cloud deployment, and monitoring are next
 
 ---
 
 ## 🎯 What It Does Today
 
-- ✅ **Product-level sales forecasting** — predicts daily sales for individual products
+- ✅ **Product-level sales forecasting** — predicts daily sales for 40 products
 - ✅ **Dictator Engine** — enforces business rules (floor limits, constraints)
-- ✅ **Feature engineering** — 39 features including lags, rolling stats, cyclical encoding, holidays, and seasons
-- ✅ **Flexible holiday & season banks** — CSV-driven, customizable per region
-- ✅ **Tri-Core Architecture** — three independent services communicating via gRPC
-- ✅ **Modern dashboard** — multi-page Next.js UI with charts and tables
-- ✅ **Product catalog** — categories and products stored in PostgreSQL
+- ✅ **53 engineered features** — lags, rolling stats, cyclical encoding, weather, 
+  holidays, Ramadan, promotions
+- ✅ **Synthetic data generator** — 2 years of realistic sales patterns
+- ✅ **Tri-Core Architecture** — Next.js + NestJS + FastAPI communicating via gRPC
+- ✅ **Modern admin dashboard** — multi-page Next.js UI with charts, tables, and search
+- ✅ **Product catalog** — 40 products, 4 categories stored in PostgreSQL
+- ✅ **XGBoost model** — R² 0.997, MAE 1.62, RMSE 4.40 on synthetic data
 
 ---
 
@@ -46,11 +51,11 @@ What that means for the numbers you'll see:
 > **I'm actively building this!** 🏗️
 
 What I'm currently working on:
-- 🔜 Adding more features (weather, promotions, price effects)
-- 🔜 Category-level predictions
-- 🔜 Store-level aggregation
-- 🔜 Better models (XGBoost, Prophet)
-- 🔜 Real weather API integration
+- 🔜 Category-level and store-level aggregation
+- 🔜 SHAP explainability for predictions
+- 🔜 Real weather API integration (currently synthetic)
+- 🔜 Redis caching for faster repeated predictions
+- 🔜 Cloud deployment (Vercel + Railway + Neon)
 
 ---
 
@@ -64,6 +69,32 @@ What I'm currently working on:
 | 📡 Communication | gRPC (Protobuf) between Backend ↔ ML Engine |
 | 🗄️ Databases | PostgreSQL (Backend), SQLite (ML Engine) |
 | 🐳 DevOps | Docker, Git, GitHub |
+
+---
+
+## 📊 Dataset Overview
+
+The dataset simulates a 2-year period for **BakuMart**, a mid-sized retail store.
+
+| Metric | Value |
+|--------|-------|
+| 🏪 Store | BakuMart (Baku, Azerbaijan) |
+| 📅 Date range | 2025-01-01 → 2026-12-31 |
+| 📦 Products | 40 (across 4 categories) |
+| 📁 Categories | Electronics (12), Food (14), Clothing (8), Home & Garden (6) |
+| 📊 Sales rows | 29,200 |
+| 🎉 Holidays | 50 (2 years) |
+| 🕌 Ramadan periods | 2 |
+| 💰 Promotions | ~1,460 events |
+
+Patterns baked into the data:
+- Weekly seasonality (weekends higher)
+- Monthly/seasonal trends per category
+- Holiday spikes (Novruz, Victory Day, New Year)
+- Ramadan effect (Food ↑, others ↓)
+- Weather effects (rain → Clothing ↓, Food ↑)
+- Promotion effects (~5% of days)
+- Occasional outliers and stockouts
 
 ---
 
@@ -90,6 +121,10 @@ python -m grpc_tools.protoc -I=./app/grpc/proto \
   --grpc_python_out=./app/grpc/generated \
   ./app/grpc/proto/predictor.proto
 
+# Generate synthetic dataset (first time only)
+python scripts/generate_promotions.py
+python scripts/generate_sales.py
+
 # Run
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
@@ -111,7 +146,7 @@ echo "ML_ENGINE_GRPC_URL=localhost:50051" >> .env
 # Set up database
 npx prisma generate
 npx prisma migrate dev --name init
-npm run seed   # Seeds categories and products
+npm run seed   # Seeds 4 categories + 40 products
 
 # Run
 npm run start:dev
@@ -148,8 +183,8 @@ npm run dev
 | Endpoint | Method | Description |
 |----------|--------|-------------|
 | `/api/predictions` | POST | Get predictions (proxies to ML Engine via gRPC) |
-| `/api/predictions/products` | GET | List products |
-| `/api/predictions/categories` | GET | List categories |
+| `/api/predictions/products` | GET | List all products |
+| `/api/predictions/categories` | GET | List all categories |
 | `/api/predictions/status` | GET | Model status |
 | `/api/health` | GET | Full system health |
 
@@ -175,12 +210,12 @@ Response (simplified):
   "data": {
     "product_id": "P001",
     "predictions": [
-      { "date": "2026-09-25", "predicted_sales": 63.65, "confidence_lower": 53.79, "confidence_upper": 73.51 }
+      { "date": "2026-10-10", "predicted_sales": 11.99, "confidence_lower": 7.58, "confidence_upper": 16.39 }
     ],
     "summary": {
-      "total_predicted": 441.40,
-      "average_daily": 63.06,
-      "peak_day": 68.85,
+      "total_predicted": 80.28,
+      "average_daily": 11.47,
+      "peak_day": 12.57,
       "floor_violations": 0
     }
   }
@@ -192,33 +227,33 @@ Response (simplified):
 ## 🗺️ Roadmap
 
 ### ✅ Done
-- [x] Product-level predictions with XGBoost
+- [x] Synthetic dataset generator (29,200 rows, 40 products)
+- [x] XGBoost model (R² 0.997, MAE 1.62, RMSE 4.40)
+- [x] 53 engineered features (time, lag, rolling, weather, holiday, promotion)
 - [x] Dictator Engine (floor limits, constraints)
-- [x] Feature engineering pipeline (39 features)
-- [x] Holiday & season banks (CSV-driven, Baku-specific)
 - [x] FastAPI REST API + gRPC server
 - [x] NestJS backend with Prisma + PostgreSQL
+- [x] Product catalog (40 products, 4 categories)
 - [x] JWT authentication scaffolding
-- [x] Next.js dashboard with charts and tables
-- [x] Product catalog with categories
+- [x] Next.js admin dashboard with charts, tables, search
 - [x] Tri-Core gRPC communication
+- [x] Bug fix: prediction placeholder values (median instead of 0)
 
 ### 🔜 Next
-- [ ] Larger dataset + proper train/validation split
 - [ ] Category-level and store-level aggregation
-- [ ] Weather API integration (real data)
-- [ ] Promotion and price effect modeling
-- [ ] Model retraining pipeline
+- [ ] SHAP explainability per prediction
+- [ ] Redis caching for faster repeated predictions
+- [ ] Real weather API integration
+- [ ] Prediction vs actual backtesting view
 - [ ] Automated tests (unit + e2e)
 - [ ] Cloud deployment (Vercel + Railway + Neon)
-- [ ] Monitoring & logging dashboard
 - [ ] Docker Compose for one-command startup
 
 ### 🔮 Long-Term
-- [ ] Support for big data workloads
-- [ ] Real-time streaming predictions
+- [ ] Real retail data integration
 - [ ] Multi-tenant architecture
 - [ ] Advanced models (Prophet, LSTM, ensemble)
+- [ ] Real-time streaming predictions
 
 ---
 
@@ -228,12 +263,16 @@ A few things I've learned building this:
 
 - **Architecture > algorithms at this stage.** A well-structured small system 
   is more valuable than a clever model bolted onto a mess.
-- **gRPC is genuinely fast.** End-to-end requests through three services 
-  complete in under a second.
-- **Small data is humbling.** A high R² on 180 rows tells you the pipeline 
-  works — not that the model is good.
-- **Debugging is the job.** I've spent more hours fixing bugs than writing 
-  new features, and that's exactly what real engineering looks like.
+- **Data quality beats model choice.** Going from 180 rows to 29,200 rows 
+  improved R² more than any hyperparameter tuning did.
+- **gRPC is genuinely fast.** End-to-end requests across three services 
+  complete in well under a second.
+- **Debugging is the job.** The most educational moment was finding a 
+  prediction bug where future rows had `sales=0`, which distorted feature 
+  engineering and caused 3x underprediction. The fix was small; finding 
+  it was the work.
+- **UI consistency matters.** Turning a prototype UI into a proper admin 
+  panel changed how the whole project feels.
 
 ---
 
