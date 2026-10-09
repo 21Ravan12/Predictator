@@ -1,3 +1,5 @@
+// app/components/Dashboard/index.tsx
+
 interface DashboardProps {
   data: {
     summary: {
@@ -15,50 +17,53 @@ export default function Dashboard({ data }: DashboardProps) {
     {
       label: 'Total Predicted',
       value: Math.round(data.summary.total_predicted).toLocaleString(),
-      color: 'indigo',
+      subtext: `${data.product_id} • Forecast period`,
       icon: '📊',
     },
     {
       label: 'Average Daily',
       value: Math.round(data.summary.average_daily).toLocaleString(),
-      color: 'green',
+      subtext: 'Units per day',
       icon: '📈',
     },
     {
       label: 'Peak Day',
       value: Math.round(data.summary.peak_day).toLocaleString(),
-      color: 'yellow',
+      subtext: 'Highest single-day forecast',
       icon: '🎯',
     },
     {
       label: 'Floor Violations',
-      value: data.summary.floor_violations,
-      color: 'red',
+      value: data.summary.floor_violations.toString(),
+      subtext: data.summary.floor_violations > 0 ? 'Requires attention' : 'All clear',
       icon: '⚠️',
+      warning: data.summary.floor_violations > 0,
     },
   ];
-
-  const colors = {
-    indigo: 'border-indigo-500 text-indigo-600',
-    green: 'border-green-500 text-green-600',
-    yellow: 'border-yellow-500 text-yellow-600',
-    red: 'border-red-500 text-red-600',
-  };
 
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
       {metrics.map((metric) => (
         <div
           key={metric.label}
-          className={`bg-white p-4 rounded-lg shadow-sm border-l-4 ${colors[metric.color as keyof typeof colors]}`}
+          className="bg-white rounded-lg border border-gray-200 p-5"
         >
-          <div className="flex items-center gap-2">
-            <span>{metric.icon}</span>
-            <p className="text-sm text-gray-500">{metric.label}</p>
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+              {metric.label}
+            </span>
+            <span className="text-base">{metric.icon}</span>
           </div>
-          <p className="text-2xl font-bold text-gray-900 mt-1">
+          <div
+            className={`text-2xl font-semibold ${
+              metric.warning ? 'text-amber-600' : 'text-gray-900'
+            }`}
+          >
             {metric.value}
-          </p>
+          </div>
+          <div className="text-xs text-gray-500 mt-1 truncate">
+            {metric.subtext}
+          </div>
         </div>
       ))}
     </div>
